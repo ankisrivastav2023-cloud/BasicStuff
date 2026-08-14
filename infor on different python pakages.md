@@ -211,3 +211,5 @@ numpy      → fast arrays of numbers (the foundation)
        └─ seaborn  → plots that take a DataFrame directly
 That's why sns.violinplot(data=adata.obs, ...) works with no conversion — adata.obs is already a pandas DataFrame, which is exactly what seaborn expects.
 
+
+
