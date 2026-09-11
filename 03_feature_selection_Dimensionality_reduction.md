@@ -58,6 +58,73 @@ Interview question this prepares you for: "You're handed someone else's .h5ad. H
 
 The consequence of not checking is severe and silent: run log1p on already-logged data and you get log-of-log values. Nothing errors. Your clustering just quietly becomes wrong.
 
+EXPLAIN ED IN SIMPLER TERMS: 
+
+Start with what adata.X is
+It's just a big table of numbers. Rows = cells, columns = genes.
+
+
+              CD3E   MS4A1   ACTB
+Cell 1         100      0    2000
+Cell 2          40      5     800
+Cell 3           0     90    1500
+That's it. A grid of numbers.
+
+The problem
+Those numbers might be raw (straight from the machine), or they might have been cleaned up already by someone else.
+
+Looking at the table, you can't tell which. And your next step depends on knowing.
+
+It's like being handed a pot of soup and asked to add salt. Did someone already salt it? If you can't tell, you might double-salt it and ruin it.
+
+Two ways to tell
+Check 1: add up each row
+
+adata.X.sum(axis=1)
+
+Cell 1:  100 + 0 + 2000 = 2100
+Cell 2:   40 + 5 +  800 =  845
+Cell 3:    0 + 90 + 1500 = 1590
+Different totals → raw. Nobody's touched it.
+
+If someone had cleaned it up, every row would add to the same number (usually 10,000), because that's exactly what the cleanup does — it makes all cells equal.
+
+Check 2: find the biggest number
+
+adata.X.max()
+Here it's 2000 — big.
+
+There's a second cleanup step called "log" that shrinks big numbers down. After it, nothing is bigger than about 10.
+
+Big number → the log step hasn't happened.
+
+What this told them
+Both checks said: raw, untouched.
+
+Even though the file was named Caron_normalized.h5ad — the word "normalized" right there in the name.
+
+The name was just wrong. Somebody named the file, and the actual contents didn't match.
+
+So they fixed it
+
+sc.pp.normalize_total(adata, target_sum=1e4)   # make every row add to 10,000
+sc.pp.log1p(adata)                             # shrink the big numbers
+Two lines. Now the data really is what the filename claimed.
+
+Why bother checking
+Because doing it twice breaks everything — and Python won't warn you.
+
+Back to the soup: salt it twice and it's inedible, but nothing stops you. No error message. You only find out at the end, when your results are wrong and you don't know why.
+
+What to remember
+Before you start work on any dataset someone gives you, run these two lines:
+
+
+adata.X.sum(axis=1)[:5]    # all the same number? → already normalised
+adata.X.max()              # smaller than 10?     → already logged
+Ten seconds. Then you know what you're holding.
+
+Don't trust the filename. Look at the numbers.
 
 adata.var_names_make_unique()
 The genes are indexed by gene symbol, and symbols are not unique — several Ensembl IDs can map to the same symbol (paralogs, patches, readthrough transcripts). AnnData needs a unique index or lookups like adata[:, "CD79A"] become ambiguous. This appends -1, -2 to duplicates.
